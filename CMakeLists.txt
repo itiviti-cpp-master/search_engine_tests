@@ -17,7 +17,8 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 # Unit tests
 add_executable(runUnitTests ${SRC_FILES})
-target_compile_options(runUnitTests PRIVATE ${COMPILE_OPTS})
+target_compile_options(runUnitTests PRIVATE ${COMPILE_OPTS}
+    -Wno-gnu-zero-variadic-macro-arguments -Wno-unused-function -Wno-missing-braces)
 target_link_options(runUnitTests PRIVATE ${LINK_OPTS})
 
 # Standard linking to gtest stuff
