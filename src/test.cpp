@@ -14,9 +14,13 @@ std::stringstream create_ss(const std::string & str)
     return std::stringstream(str);
 }
 
+template <class... Args>
+constexpr std::size_t count_args(Args &&... args)
+{
+    return (0 + ... + (args, 1));
 }
 
-using namespace searcher;
+}
 
 TEST(SearchEngineBasicTests, Singleton)
 {
@@ -115,7 +119,7 @@ TEST(SearchEngineBasicTests, AddRemoveEmptyDocument)
     auto empty_stream = create_ss("   ...- ");
 
     Searcher s;
-    s.add_document(simple_file, simple_file_stream);
+    s.add_document(simple_file, simple_stream);
     s.add_document(empty_file, empty_stream);
 
     {
@@ -789,13 +793,13 @@ TEST(SearchEngineStressTests, StressTest)
     Searcher::Filename Alices_Adventures_in_Wonderland("test/etc/Alices_Adventures_in_Wonderland.txt");
     std::ifstream Alices_Adventures_in_Wonderland_stream(Alices_Adventures_in_Wonderland);
 
-#define CHECK(query, list) \
+#define CHECK(query, ...) \
     { \
         const auto [begin, end] = s.search(query); \
-        for (const auto & doc : list) { \
+        for (const auto & doc : { __VA_ARGS__ }) { \
             EXPECT_EQ(1, std::count(begin, end, doc)); \
         } \
-        EXPECT_EQ(list.size, std::distance(begin, end)); \
+        EXPECT_EQ(count_args( __VA_ARGS__ ), std::distance(begin, end)); \
     }
 #define NOT_FOUND(query) \
     { \
@@ -842,12 +846,12 @@ TEST(SearchEngineStressTests, StressTest)
         begin++;
         ASSERT_EQ(begin, end);
     }
-    CHECK("\"to order the horses\"", {Frankenstein})
-    CHECK("\"a subject for\"", {Frankenstein})
-    CHECK("\"I could\"", {Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland})
-    CHECK("\"At first\"", {Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick})
-    CHECK("\"my brother No one\"", {Frankenstein})
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", {Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland})
+    CHECK("\"to order the horses\"", Frankenstein)
+    CHECK("\"a subject for\"", Frankenstein)
+    CHECK("\"I could\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland)
+    CHECK("\"At first\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick)
+    CHECK("\"my brother No one\"", Frankenstein)
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland)
 
     s.remove_document(Frankenstein);
     s.remove_document(Alices_Adventures_in_Wonderland);
@@ -866,8 +870,8 @@ TEST(SearchEngineStressTests, StressTest)
     }
     NOT_FOUND("\"to order the horses\"")
     NOT_FOUND("\"a subject for\"")
-    CHECK("\"I could\"", {Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde})
-    CHECK("\"At first\"", {Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde})
+    CHECK("\"I could\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
+    CHECK("\"At first\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
     NOT_FOUND("\"my brother No one\"")
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", {Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde})
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
 }
