@@ -849,9 +849,9 @@ TEST(SearchEngineStressTests, StressTest)
     CHECK("\"to order the horses\"", Frankenstein)
     CHECK("\"a subject for\"", Frankenstein)
     CHECK("\"I could\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland)
-    CHECK("\"At first\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick)
+    CHECK("\"At first\"", Frankenstein, Pride_and_Prejudice, Moby_Dick)
     CHECK("\"my brother No one\"", Frankenstein)
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland)
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice, Moby_Dick, Alices_Adventures_in_Wonderland)
 
     s.remove_document(Frankenstein);
     s.remove_document(Alices_Adventures_in_Wonderland);
@@ -871,7 +871,7 @@ TEST(SearchEngineStressTests, StressTest)
     NOT_FOUND("\"to order the horses\"")
     NOT_FOUND("\"a subject for\"")
     CHECK("\"I could\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
-    CHECK("\"At first\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
+    CHECK("\"At first\"", Pride_and_Prejudice)
     NOT_FOUND("\"my brother No one\"")
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, is critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice)
 }
