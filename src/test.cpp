@@ -36,7 +36,7 @@ TEST(SearchEngineBasicTests, Singleton)
     }
     {
         const auto [begin, end] = s.search("a_single_word");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(singleton_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -98,14 +98,14 @@ TEST(SearchEngineBasicTests, AddTwoDocuments)
     }
     {
         const auto [begin, end] = s.search("is, to, a, of");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(2, std::distance(begin, end));
         EXPECT_EQ(1, std::count(begin, end, simple_file));
         EXPECT_EQ(1, std::count(begin, end, call_me_ishmael));
     }
     {
         const auto [begin, end] = s.search("is, to, A, a, of");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -124,13 +124,13 @@ TEST(SearchEngineBasicTests, AddRemoveEmptyDocument)
 
     {
         const auto [begin, end] = s.search("two");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("three One");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -139,13 +139,13 @@ TEST(SearchEngineBasicTests, AddRemoveEmptyDocument)
 
     {
         const auto [begin, end] = s.search("two");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("three");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -163,13 +163,13 @@ TEST(SearchEngineBasicTests, AddRemoveSingleton)
 
     {
         const auto [begin, end] = s.search("A");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("query");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -178,19 +178,19 @@ TEST(SearchEngineBasicTests, AddRemoveSingleton)
 
     {
         const auto [begin, end] = s.search("A");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("query");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("Aleph");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(singleton_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -199,13 +199,13 @@ TEST(SearchEngineBasicTests, AddRemoveSingleton)
 
     {
         const auto [begin, end] = s.search("A");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("speed");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -227,13 +227,13 @@ TEST(SearchEngineBasicTests, AddRemoveRepeatingSingleton)
 
     {
         const auto [begin, end] = s.search("engine");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("engine is");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -242,14 +242,14 @@ TEST(SearchEngineBasicTests, AddRemoveRepeatingSingleton)
 
     {
         const auto [begin, end] = s.search("engine");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(2, std::distance(begin, end));
         EXPECT_EQ(1, std::count(begin, end, simple_file));
         EXPECT_EQ(1, std::count(begin, end, singleton_file));
     }
     {
         const auto [begin, end] = s.search("engine is");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -258,13 +258,13 @@ TEST(SearchEngineBasicTests, AddRemoveRepeatingSingleton)
 
     {
         const auto [begin, end] = s.search("engine");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
     {
         const auto [begin, end] = s.search("engine is");
-        EXPECT_NE(begin, end);
+        ASSERT_NE(begin, end);
         EXPECT_EQ(simple_file, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
@@ -364,13 +364,13 @@ TEST(SearchEngineBasicTests, ThreePairsOfIterators)
     auto [begin_second, end_second] = s.search("Ishmael");
     auto [begin_third, end_third] = s.search("Boris");
 
-    ASSERT_EQ(*begin_first, simple_file);
     ASSERT_NE(begin_first, end_first);
+    ASSERT_EQ(*begin_first, simple_file);
     begin_first++;
     ASSERT_EQ(begin_first, end_first);
 
-    ASSERT_EQ(*begin_second, call_me_ishmael);
     ASSERT_NE(begin_second, end_second);
+    ASSERT_EQ(*begin_second, call_me_ishmael);
     begin_second++;
     ASSERT_EQ(begin_second, end_second);
 
@@ -612,6 +612,10 @@ TEST(SearchQueryTests, IncorrectQuery)
     ASSERT_THROW(s.search(" "), Searcher::BadQuery);
     ASSERT_THROW(s.search(" \"the query"), Searcher::BadQuery);
     ASSERT_THROW(s.search(" the query\""), Searcher::BadQuery);
+    ASSERT_THROW(s.search("\"\""), Searcher::BadQuery);
+    ASSERT_THROW(s.search(" ,_\"\""), Searcher::BadQuery);
+    ASSERT_THROW(s.search("\"...\""), Searcher::BadQuery);
+    ASSERT_THROW(s.search("\"\":  "), Searcher::BadQuery);
     ASSERT_THROW(s.search("(_*_)"), Searcher::BadQuery);
 }
 
