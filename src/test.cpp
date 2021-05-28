@@ -50,9 +50,9 @@ TEST(SearchEngineBasicTests, AddSimpleDocument)
     s.add_document(simple_file, simple_file_stream);
     auto [begin, end] = s.search("engine");
     ASSERT_NE(begin, end);
-    ASSERT_EQ(*begin, simple_file);
+    EXPECT_EQ(*begin, simple_file);
     begin++;
-    ASSERT_EQ(begin, end);
+    EXPECT_EQ(begin, end);
 }
 
 TEST(SearchEngineBasicTests, AddEmptyDocument)
@@ -106,7 +106,14 @@ TEST(SearchEngineBasicTests, AddTwoDocuments)
     {
         const auto [begin, end] = s.search("is, to, A, a, of");
         ASSERT_NE(begin, end);
-        EXPECT_EQ(simple_file, *begin);
+        EXPECT_EQ(2, std::distance(begin, end));
+        EXPECT_EQ(1, std::count(begin, end, simple_file));
+        EXPECT_EQ(1, std::count(begin, end, call_me_ishmael));
+    }
+    {
+        const auto [begin, end] = s.search("is, to, A, a, of, from");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(call_me_ishmael, *begin);
         EXPECT_EQ(1, std::distance(begin, end));
     }
 }
@@ -420,26 +427,26 @@ TEST(SearchEngineBasicTests, ExtraSpacesAndPunctInFile)
     {
         auto [begin, end] = s.search("the");
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
+        EXPECT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
         begin++;
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
+        EXPECT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
     {
         auto [begin, end] = s.search("\"the speed\"");
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
+        EXPECT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
         begin++;
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
+        EXPECT_TRUE(*begin == simple_file || *begin == extra_spaces_and_punct);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
     {
         auto [begin, end] = s.search("\"the speed of query\"");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 }
 
@@ -469,7 +476,18 @@ TEST(SearchEngineBasicTests, AddSameDocumentTwice)
     }
 }
 
-
+TEST(SearchQueryTests, SingleWordInAPhrase)
+{
+    Searcher::Filename simple_file("test/etc/simple_file.txt");
+    std::ifstream simple_file_stream(simple_file);
+    Searcher s;
+    s.add_document(simple_file, simple_file_stream);
+    auto [begin, end] = s.search("\"a\"");
+    ASSERT_NE(begin, end);
+    EXPECT_EQ(*begin, simple_file);
+    begin++;
+    EXPECT_EQ(begin, end);
+}
 
 TEST(SearchQueryTests, TwoWordsInTheQuery)
 {
@@ -485,17 +503,17 @@ TEST(SearchQueryTests, TwoWordsInTheQuery)
     {
         auto [begin, end] = s.search("the city");
         ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, call_me_ishmael);
+        EXPECT_EQ(*begin, call_me_ishmael);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("the implementation");
         ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, simple_file);
+        EXPECT_EQ(*begin, simple_file);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 }
 
@@ -515,34 +533,76 @@ TEST(SearchQueryTests, TwoWordsWithQuotesInTheQuery)
     {
         auto [begin, end] = s.search("\"the city\"");
         ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, call_me_ishmael);
+        EXPECT_EQ(*begin, call_me_ishmael);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("\"the implementation\"");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("\"the query\"");
         ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, simple_file);
+        EXPECT_EQ(*begin, simple_file);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
+    }
+
+    {
+        auto [begin, end] = s.search("\"a search\"");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(*begin, simple_file);
+        begin++;
+        EXPECT_EQ(begin, end);
     }
 
     s.add_document(simple_file_copy, simple_file_copy_stream);
     {
         auto [begin, end] = s.search("\"the query\"");
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == simple_file_copy);
+        EXPECT_TRUE(*begin == simple_file || *begin == simple_file_copy);
         begin++;
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == simple_file_copy);
+        EXPECT_TRUE(*begin == simple_file || *begin == simple_file_copy);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
+    }
+}
+
+TEST(SearchQueryTests, PhraseAndIndividualWords)
+{
+    Searcher::Filename simple_file("test/etc/simple_file.txt");
+    std::ifstream simple_file_stream(simple_file);
+    Searcher::Filename call_me_ishmael("test/etc/call_me_ishmael.txt");
+    std::ifstream call_me_ishmael_stream(call_me_ishmael);
+
+    Searcher s;
+    s.add_document(call_me_ishmael, call_me_ishmael_stream);
+    s.add_document(simple_file, simple_file_stream);
+
+    {
+        auto [begin, end] = s.search("\"a\" engine");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(*begin, simple_file);
+        begin++;
+        EXPECT_EQ(begin, end);
+    }
+    {
+        auto [begin, end] = s.search("\"a search\" engine");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(*begin, simple_file);
+        begin++;
+        EXPECT_EQ(begin, end);
+    }
+    {
+        auto [begin, end] = s.search("optimize \"a search\" query \"the speed\"");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(*begin, simple_file);
+        begin++;
+        EXPECT_EQ(begin, end);
     }
 }
 
@@ -563,40 +623,53 @@ TEST(SearchQueryTests, ComplexQuery)
     {
         auto [begin, end] = s.search("\"the city\" \"Call me Ishmael\" Manhattoes \"Corlears Hook\" wharves");
         ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, call_me_ishmael);
+        EXPECT_EQ(*begin, call_me_ishmael);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("the implementation of Ishmael");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("\"the implementation of Ishmael\"");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("\"London of a search engine\"");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
     }
 
     {
         auto [begin, end] = s.search("\"Call me BUGAGA Ishmael\"");
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
+    }
+
+    {
+        auto [begin, end] = s.search("a goal \"a goal of a\" search engine");
+        ASSERT_NE(begin, end);
+        EXPECT_EQ(2, std::distance(begin, end));
+        EXPECT_EQ(1, std::count(begin, end, simple_file));
+        EXPECT_EQ(1, std::count(begin, end, simple_file_copy));
     }
 
     {
         auto [begin, end] = s.search("\"the query\" \"A goal\" the the the the the optimize");
         ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == simple_file_copy);
+        EXPECT_TRUE(*begin == simple_file || *begin == simple_file_copy);
         begin++;
-        ASSERT_NE(begin, end);
-        ASSERT_TRUE(*begin == simple_file || *begin == simple_file_copy);
+        EXPECT_NE(begin, end);
+        EXPECT_TRUE(*begin == simple_file || *begin == simple_file_copy);
         begin++;
-        ASSERT_EQ(begin, end);
+        EXPECT_EQ(begin, end);
+    }
+
+    {
+        auto [begin, end] = s.search("\"the query\" \"The goal\" the the the the the optimize");
+        EXPECT_EQ(begin, end);
     }
 }
 
@@ -798,18 +871,18 @@ TEST(SearchEngineStressTests, StressTest)
     std::ifstream Alices_Adventures_in_Wonderland_stream(Alices_Adventures_in_Wonderland);
 
 #define CHECK(query, ...) \
-    { \
+    do { \
         const auto [begin, end] = s.search(query); \
         for (const auto & doc : { __VA_ARGS__ }) { \
-            EXPECT_EQ(1, std::count(begin, end, doc)); \
+            EXPECT_EQ(1, std::count(begin, end, doc)) << doc; \
         } \
         EXPECT_EQ(count_args( __VA_ARGS__ ), std::distance(begin, end)); \
-    }
+    } while (false)
 #define NOT_FOUND(query) \
-    { \
+    do { \
         const auto [begin, end] = s.search(query); \
         EXPECT_EQ(begin, end); \
-    }
+    } while (false)
     Searcher s;
     s.add_document(Frankenstein, Frankenstein_stream);
     s.add_document(Pride_and_Prejudice, Pride_and_Prejudice_stream);
@@ -817,65 +890,33 @@ TEST(SearchEngineStressTests, StressTest)
     s.add_document(Moby_Dick, Moby_Dick_stream);
     s.add_document(Alices_Adventures_in_Wonderland, Alices_Adventures_in_Wonderland_stream);
 
-    {
-        auto [begin, end] = s.search("Prejudice");
-        ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, Pride_and_Prejudice);
-        begin++;
-        ASSERT_EQ(begin, end);
-    }
-    {
-        auto [begin, end] = s.search("Frankenstein");
-        ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, Frankenstein);
-        begin++;
-        ASSERT_EQ(begin, end);
-    }
-    {
-        auto [begin, end] = s.search("daughters");
-        ASSERT_NE(begin, end);
-
-        ASSERT_TRUE(
-                *begin == Pride_and_Prejudice ||
-                *begin == Moby_Dick
-                );
-
-        begin++;
-        ASSERT_NE(begin, end);
-        ASSERT_TRUE(
-                *begin == Pride_and_Prejudice ||
-                *begin == Moby_Dick
-                );
-
-        begin++;
-        ASSERT_EQ(begin, end);
-    }
-    CHECK("\"to order the horses\"", Frankenstein)
-    CHECK("\"a subject for\"", Frankenstein)
-    CHECK("\"I could\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland)
-    CHECK("\"At first\"", Frankenstein, Pride_and_Prejudice, Moby_Dick)
-    CHECK("\"my brother No one\"", Frankenstein)
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice, Moby_Dick, Alices_Adventures_in_Wonderland)
+    CHECK("Prejudice", Frankenstein, Pride_and_Prejudice);
+    CHECK("Frankenstein", Frankenstein);
+    CHECK("daughters", Pride_and_Prejudice, Moby_Dick);
+    CHECK("\"the horses\"", Frankenstein, Pride_and_Prejudice);
+    CHECK("\"the horses\" three months", Frankenstein, Pride_and_Prejudice);
+    CHECK("\"the horses\" \"three months\"", Frankenstein, Pride_and_Prejudice);
+    CHECK("\"the horses\" \"three months\" to know what he had to", Frankenstein, Pride_and_Prejudice);
+    CHECK("\"the horses\" \"three months\" \"to know what he had to\"", Pride_and_Prejudice);
+    CHECK("a to the and an of the I in that when was his whom you this where what which he she it", Alices_Adventures_in_Wonderland, Frankenstein, Moby_Dick, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde);
+    CHECK("a to the and an of the I in that when was his whom you this where won what which he she it", Alices_Adventures_in_Wonderland, Frankenstein, Pride_and_Prejudice);
+    CHECK("\"to order the horses\"", Frankenstein);
+    CHECK("\"a subject for\"", Frankenstein);
+    CHECK("\"I could\"", Frankenstein, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde, Moby_Dick, Alices_Adventures_in_Wonderland);
+    CHECK("\"At first\"", Alices_Adventures_in_Wonderland, Frankenstein, Moby_Dick, Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde);
+    CHECK("\"my brother No one\"", Frankenstein);
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice, Moby_Dick, Alices_Adventures_in_Wonderland);
 
     s.remove_document(Frankenstein);
     s.remove_document(Alices_Adventures_in_Wonderland);
     s.remove_document(Moby_Dick);
-    {
-        auto [begin, end] = s.search("daughters");
-        ASSERT_NE(begin, end);
-        ASSERT_EQ(*begin, Pride_and_Prejudice);
 
-        begin++;
-        ASSERT_EQ(begin, end);
-    }
-    {
-        auto [begin, end] = s.search("ksfhiwefhliwehapoheioi");
-        ASSERT_EQ(begin, end);
-    }
-    NOT_FOUND("\"to order the horses\"")
-    NOT_FOUND("\"a subject for\"")
-    CHECK("\"I could\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde)
-    CHECK("\"At first\"", Pride_and_Prejudice)
-    NOT_FOUND("\"my brother No one\"")
-    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice)
+    CHECK("daughters", Pride_and_Prejudice);
+    NOT_FOUND("ksfhiwefhliwehapoheioi");
+    NOT_FOUND("\"to order the horses\"");
+    NOT_FOUND("\"a subject for\"");
+    CHECK("\"I could\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde);
+    CHECK("\"At first\"", Pride_and_Prejudice, The_Strange_Case_Of_Dr_Jekyll_And_Mr_Hyde);
+    NOT_FOUND("\"my brother No one\"");
+    CHECK("\"Volunteers and financial support to provide volunteers with the assistance they need, are critical to reaching Project Gutenberg-tm's\"", Pride_and_Prejudice);
 }
