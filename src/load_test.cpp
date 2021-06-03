@@ -56,6 +56,22 @@ SeqPrinter<It> sequence_printer(It begin, It end)
     return {begin, end};
 }
 
+auto read_queries(const std::string & filename)
+{
+    std::vector<std::pair<std::string, std::size_t>> queries;
+    std::ifstream f(filename);
+    for (std::string line; std::getline(f, line); ) {
+        const auto pos = line.find("\t");
+        if (pos != line.npos && (pos + 1) < line.size()) {
+            queries.emplace_back(line.substr(0, pos), std::stoul(line.substr(pos+1)));
+        }
+        else {
+            std::cerr << "Bad queries file: " << line;
+        }
+    }
+    return queries;
+}
+
 class Document
 {
     Searcher::Filename m_filename;
@@ -579,122 +595,7 @@ TEST_F(InvertedIndexLoadTest, simple)
 
 TEST_F(InvertedIndexLoadTest, many)
 {
-    using S = std::string_view;
-    std::vector<std::pair<std::string_view, std::size_t>> expected = {
-        {S{"little and the blood was \"There lay the\" \"seeing so\" \"seek him\""}, 1},
-        {S{"to endure, \"little and the blood was\" :seeing so may not think"}, 1},
-        {S{"\"caught the boat to\" white there lay the \"to endure\" \"here an opening\" \"further when\" \"all the\""}, 1},
-        {S{"to endure in seeing so \"little and the\" blood was \"she grew\" \"time - was\" give me!"}, 1},
-        {S{"\"and therefore\" selfish lips to rub. \"to endure in seeing so\" \"blood was\""}, 1},
-        {S{"may not think it \"grew whiter and\", \"something like\" \"If so\" \"seek him\" \"and there are\""}, 1},
-        {S{"\"long leather one, something like\" blood was respectful and polite \"seek him further when\" \"selfish and therefore\" dark"}, 0},
-        {S{"a"}, 79},
-        {S{"the"}, 79},
-        {S{"whom"}, 73},
-        {S{"theirs"}, 43},
-        {S{"person"}, 73},
-        {S{"castle"}, 32},
-        {S{"car"}, 26},
-        {S{"evidence"}, 51},
-        {S{"vampyre"}, 1},
-        {S{"vampire"}, 7},
-        {S{"ghoul"}, 3},
-        {S{"vampire ghoul"}, 2},
-        {S{"un-dead"}, 1},
-        {S{"ghost"}, 39},
-        {S{"wight"}, 10},
-        {S{"lantern"}, 25},
-        {S{"\"to me\""}, 64},
-        {S{"\"for you\""}, 60},
-        {S{"\"where to\""}, 36},
-        {S{"to me"}, 74},
-        {S{"for you"}, 76},
-        {S{"where to"}, 76},
-        {S{"order the horses"}, 45},
-        {S{"\"order the horses\""}, 1},
-        {S{"all"}, 76},
-        {S{"pack"}, 40},
-        {S{"most effective"}, 18},
-        {S{"\"most effective\""}, 5},
-        {S{"that Hendricks"}, 1},
-        {S{"that Hendriks"}, 0},
-        {S{"them"}, 73},
-        {S{"begin"}, 54},
-        {S{"lid down"}, 28},
-        {S{"\"lid down\""}, 1},
-        {S{"but we"}, 73},
-        {S{"\"but we\""}, 73},
-        {S{"don't know"}, 61},
-        {S{"\"don't know\""}, 44},
-        {S{"Klaus stood"}, 1},
-        {S{"Kaus stood"}, 0},
-        {S{"\"Klaus stood\""}, 1},
-        {S{"Stop"}, 57},
-        {S{"was"}, 73},
-        {S{"relays"}, 3},
-        {S{"be a"}, 73},
-        {S{"\"be a\""}, 62},
-        {S{"forth now"}, 72},
-        {S{"\"forth now\""}, 3},
-        {S{"deductible to"}, 73},
-        {S{"\"deductible to\""}, 73},
-        {S{"\"If so, time was\" nigh little and begone \"may not think\" \"which the\" tempest"}, 0},
-        {S{"\"rub her lips as so\" the blood was warm glistening \"we seek\" \"all the\" \"use it\" beauty"}, 0},
-        {S{"\"we seek him further when\" came towards us now to tell where hung a door \"Give me\""}, 1},
-        {S{"\"selfish and therefore\" \"the shoe down\" \"pledge him\" that we continued thus"}, 0},
-        {S{"\"she grew whiter and\" \"there lay\" \"time was\" \"may not\" \"think it\" \"had drunk\" \"here an\" \"in seeing so\" \"give me\" \"her beauty up\" \"for I was\""}, 0},
-        {S{"\"the bliss!\" and him was great"}, 4},
-        {S{"\"Give me\" the hand of reason \"for your\""}, 47},
-        {S{"\"had drunk her beauty up\" \"give me\""}, 1},
-        {S{"\"portal door, where hung a\""}, 1},
-        {S{"\"may not think it\" further pleasure and the bliss, had drunk her beauty up \"something like\" \"said he\""}, 1},
-        {S{"\"And pledge him\" pleasure and beauty"}, 1},
-        {S{"\"things you can do with\" one another are many \"therefore\""}, 51},
-        {S{"\"saw them for\" what they are and more"}, 3},
-        {S{"\"for I was\" healthy and young "}, 18},
-        {S{"\"white foam which the tempest\" boat to long opening \"as so\" \"saw here\""}, 1},
-        {S{"\"will use it well\""}, 1},
-        {S{"long leather one, something like \"the Count\" \"command all the\" \"If so, time was\" \"rub her lips as\" \"and the blood was\" to endure \"white foam\""}, 1},
-        {S{"\"that we continued thus\""}, 1},
-        {S{"\"came towards us\" with fear and respect \"and there are\""}, 2},
-        {S{"\"wear a more respectful\""}, 1},
-        {S{"\"saw here an opening\" \"little and the\" \"time was\" \"if so\" \"a more\" respectful and polite \"and therefore\""}, 0},
-        {S{"\"With pleasure said he\""}, 1},
-        {S{"\"and there are\" \"for your\" \"give me\""}, 21},
-        {S{"\"the shoe down\""}, 1},
-        {S{"\"she grew whiter and\" her beauty came towards us with pleasure had unposted and there was the \"white foam\""}, 0},
-        {S{"\"there was an inner meaning\""}, 1},
-        {S{"rub her lips as so the blood was warm glistening \"and therefore\" selfish whiter which hung a pledge"}, 1},
-        {S{"\"a good sort of fellow\""}, 1},
-        {S{"\"It almost seemed to\" show little \"and for\""}, 2},
-        {S{"\"end would be none\""}, 1},
-        {S{"caught the boat to \"little and the\" where may: something like, \"and therefore\"!"}, 3},
-        {S{"\"I have now to tell\""}, 1},
-        {S{"\"There lay the\" all the things \"may not\" \"in seeing\""}, 1},
-        {S{"\"had unposted his pen\""}, 1},
-        {S{"\"command all the\" meaner things \"the blood was\" \"her lips\" there lay caught in the darkness fall upon us"}, 1},
-        {S{"\"and there was the\""}, 14},
-        {S{"\"to her very earnestly\""}, 1},
-        {S{"\"if it makes\""}, 1},
-        {S{"\"makes me grow larger\""}, 1},
-        {S{"\"they would put\""}, 2},
-        {S{"\"put their heads down\""}, 2},
-        {S{"\"had fallen into\""}, 20},
-        {S{"\"it there were a\""}, 2},
-        {S{"\"added in a whisper\""}, 2},
-        {S{"\"she said to herself\""}, 6},
-        {S{"\"thing she heard\""}, 1},
-        {S{"\"heard was a general\""}, 1},
-        {S{"\"explain yourself I\""}, 1},
-        {S{"\"of the other!\""}, 45},
-        {S{"\"Her chin was\""}, 1},
-        {S{"\"nearly as large as   .\""}, 2},
-        {S{"\"Asked. We called him\""}, 1},
-        {S{"\"the most charitable\""}, 1},
-        {S{"\"with an air of being afraid\""}, 1},
-        {S{"\"had come off as well as could\""}, 1},
-#include "queries.inl"
-    };
+    const auto expected = read_queries("test/etc/queries.txt");
     for (const auto & [query, expected_number] : expected) {
         const auto [begin, end] = s.search(std::string{query});
         EXPECT_EQ(expected_number, std::distance(begin, end)) << query;
