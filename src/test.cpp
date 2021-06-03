@@ -20,6 +20,47 @@ constexpr std::size_t count_args(Args &&... args)
     return (0 + ... + (args, 1));
 }
 
+template <class It>
+class SeqPrinter
+{
+    It m_begin;
+    It m_end;
+    std::string_view m_sep;
+public:
+    SeqPrinter(const It begin, const It end, const std::string_view sep = ",")
+        : m_begin(begin)
+        , m_end(end)
+        , m_sep(sep)
+    {
+    }
+
+    std::ostream & print(std::ostream & strm) const
+    {
+        bool first = true;
+        for (auto it = m_begin; it != m_end; ++it) {
+            if (!first) {
+                strm << m_sep;
+            }
+            else {
+                first = false;
+            }
+            strm << *it;
+        }
+        return strm;
+    }
+
+    friend std::ostream & operator << (std::ostream & strm, const SeqPrinter & sp)
+    {
+        return sp.print(strm);
+    }
+};
+
+template <class It>
+SeqPrinter<It> sequence_printer(It begin, It end)
+{
+    return {begin, end};
+}
+
 }
 
 TEST(SearchEngineBasicTests, Singleton)
@@ -857,7 +898,7 @@ TEST(SearchEngineRemoveDocumentTests, RemoveEmptyDocument)
 
 
 
-TEST(SearchEngineStressTests, StressTest)
+TEST(SearchEngineBigDocs, add_and_remove)
 {
     Searcher::Filename Frankenstein("test/etc/Frankenstein.txt");
     std::ifstream Frankenstein_stream(Frankenstein);
@@ -876,12 +917,12 @@ TEST(SearchEngineStressTests, StressTest)
         for (const auto & doc : { __VA_ARGS__ }) { \
             EXPECT_EQ(1, std::count(begin, end, doc)) << doc; \
         } \
-        EXPECT_EQ(count_args( __VA_ARGS__ ), std::distance(begin, end)); \
+        EXPECT_EQ(count_args( __VA_ARGS__ ), std::distance(begin, end)) << "Found in " << sequence_printer(begin, end); \
     } while (false)
 #define NOT_FOUND(query) \
     do { \
         const auto [begin, end] = s.search(query); \
-        EXPECT_EQ(begin, end); \
+        EXPECT_EQ(begin, end) << "Found in " << sequence_printer(begin, end); \
     } while (false)
     Searcher s;
     s.add_document(Frankenstein, Frankenstein_stream);

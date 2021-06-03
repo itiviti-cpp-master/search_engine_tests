@@ -31,13 +31,9 @@ target_link_libraries(runUnitTests search_engine_lib)
 file(GLOB ETC_FILES RELATIVE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/etc/*)
 
 # Copy data files for tests
-add_custom_command(
-    OUTPUT ${ETC_FILES}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/etc ${CMAKE_CURRENT_BINARY_DIR}/etc
-    DEPENDS ${ETC_FILES}
-    COMMENT "Copying test data")
-
 add_custom_target(
-    etc DEPENDS ${ETC_FILES})
+    etc
+    COMMAND ${CMAKE_COMMAND} -E tar "xf" ${PROJECT_SOURCE_DIR}/etc.zip
+    COMMENT "Extracting test data")
 
 add_dependencies(runUnitTests etc)
