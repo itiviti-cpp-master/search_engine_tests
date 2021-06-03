@@ -695,7 +695,7 @@ TEST_F(InvertedIndexLoadTest, many)
         {S{"\"had come off as well as could\""}, 1},
 #include "queries.inl"
     };
-    for (const auto [query, expected_number] : expected) {
+    for (const auto & [query, expected_number] : expected) {
         const auto [begin, end] = s.search(std::string{query});
         EXPECT_EQ(expected_number, std::distance(begin, end)) << query;
     }
@@ -780,7 +780,7 @@ TEST_F(InvertedIndexLoadTest, parallel_light)
     for (std::size_t i = 0; i < N; ++i) {
         threads.emplace_back([&mutex, &results, &task = tasks[i], &searcher = s] () {
                 std::map<std::string_view, std::size_t> result;
-                for (const auto query : task) {
+                for (const auto & query : task) {
                     const auto [begin, end] = searcher.search(std::string{query});
                     result[query] = std::distance(begin, end);
                 }
@@ -868,7 +868,7 @@ TEST_F(InvertedIndexLoadTest, parallel_heavy)
     for (std::size_t i = 0; i < N; ++i) {
         threads.emplace_back([&mutex, &results, &task = tasks[i], &searcher = s] () {
                 std::map<std::string_view, std::size_t> result;
-                for (const auto query : task) {
+                for (const auto & query : task) {
                     const auto [begin, end] = searcher.search(std::string{query});
                     result[query] = std::distance(begin, end);
                 }
