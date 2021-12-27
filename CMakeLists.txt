@@ -42,7 +42,7 @@ add_custom_target(
 
 add_custom_target(
     etc_docs
-    COMMAND ${CMAKE_COMMAND} -E tar "xf" ${PROJECT_SOURCE_DIR}/etc.zip
+    COMMAND ${CMAKE_COMMAND} -E tar "xf" ${PROJECT_SOURCE_DIR}/etc.tar.bz2
     COMMENT "Extracting test data")
 
 add_dependencies(runUnitTests etc_docs etc)
