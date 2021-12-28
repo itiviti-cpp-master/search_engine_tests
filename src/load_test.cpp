@@ -76,39 +76,6 @@ SeqPrinter<It> sequence_printer(It begin, It end)
     return {begin, end};
 }
 
-auto trim(std::string_view str)
-{
-    std::size_t begin = 0, end = str.size();
-    while (begin < end && std::isspace(str[begin])) {
-        ++begin;
-    }
-    while ((begin + 1) < end && std::isspace(str[end - 1])) {
-        --end;
-    }
-    str.remove_prefix(begin);
-    str.remove_suffix(str.size() - end);
-    return str;
-}
-
-auto split_line(const std::string_view line)
-{
-    std::vector<std::string_view> parts;
-    for (std::size_t i = 0; i < line.size(); ) {
-        auto pos = line.find(", ", i);
-        if (pos == line.npos) {
-            pos = line.size();
-        }
-        if (i < pos) {
-            const auto part = trim(line.substr(i, pos - i));
-            if (!part.empty()) {
-                parts.push_back(part);
-            }
-        }
-        i = pos + 2;
-    }
-    return parts;
-}
-
 template <class T>
 auto split_tasks(const std::size_t n, const std::vector<T> & items)
 {
@@ -124,15 +91,6 @@ auto split_tasks(const std::size_t n, const std::vector<T> & items)
         tasks.emplace_back(start, items.size());
     }
     return tasks;
-}
-
-template <class C>
-typename C::value_type get_nth(const C & c, const std::size_t n)
-{
-    if (n < c.size()) {
-        return c[n];
-    }
-    return {};
 }
 
 auto read_queries(const std::string & filename)
@@ -159,23 +117,6 @@ auto read_doc_list(const std::string & filename, const std::filesystem::path & p
         docs.emplace_back(prefix / line);
     }
     return docs;
-}
-
-auto read_many_queries(const std::string & filename)
-{
-    std::vector<std::pair<std::string, std::string>> queries;
-    std::ifstream f(filename);
-    for (std::string line; std::getline(f, line); ) {
-        const auto pos = line.find("\t");
-        if (pos != line.npos && (pos + 1) < line.size()) {
-            queries.emplace_back(line.substr(0, pos), get_nth(split_line(std::string_view{line}.substr(pos+1)), ControlN));
-        }
-        else {
-            queries.emplace_back(line, "");
-        }
-        break;
-    }
-    return queries;
 }
 
 class Document
@@ -267,11 +208,11 @@ struct InvertedIndexSmallTest : ::testing::Test
 struct InvertedIndexLoadTest : ::testing::Test
 {
     inline static Searcher s;
-    inline static std::vector<std::pair<std::string, std::string>> queries;
+    inline static std::vector<std::pair<std::string, std::size_t>> queries;
 
     static void SetUpTestSuite()
     {
-        queries = read_many_queries("test/etc/many_queries.txt");
+        queries = read_queries("test/etc/many_queries.txt");
         for (const auto & file : read_doc_list("test/etc/all_docs.txt", "test/etc")) {
             std::ifstream f(file);
             s.add_document(file.lexically_normal(), f);
@@ -906,6 +847,40 @@ TEST_F(InvertedIndexSmallTest, parallel_heavy)
     }
 }
 
+TEST_F(InvertedIndexSmallTest, parallel_many)
+{
+    const std::size_t N = 4, K = 30, M = 2;
+    const auto queries = read_queries("test/etc/queries.txt");
+    std::mt19937_64 rnd(0); // always the same sequence
+    std::vector<std::vector<std::size_t>> tasks;
+    tasks.reserve(N);
+    for (std::size_t i = 0; i < N; ++i) {
+        auto & indices = tasks.emplace_back(K * queries.size());
+        for (std::size_t j = 0; j < K; ++j) {
+            std::iota(indices.begin() + j * queries.size(), indices.begin() + (j + 1) * queries.size(), 0);
+        }
+        std::shuffle(indices.begin(), indices.end(), rnd);
+    }
+    std::vector<std::thread> threads;
+    threads.reserve(N);
+    int acc = 0;
+    for (const auto & task : tasks) {
+        threads.emplace_back([&acc, &task, &searcher = s, &queries = queries] () {
+                for (const auto i : task) {
+                    auto [begin, end] = searcher.search(queries[i].first);
+                    advance_with_limit(M, begin, end);
+                    if (begin != end && begin->size() > 0) {
+                        ++acc;
+                    }
+                }
+            });
+    }
+    for (auto & t : threads) {
+        t.join();
+    }
+    EXPECT_LT(0, acc);
+}
+
 TEST_F(InvertedIndexLoadTest, many)
 {
     const std::size_t N = 4;
@@ -913,13 +888,11 @@ TEST_F(InvertedIndexLoadTest, many)
     struct Misstep
     {
         std::string_view query;
-        std::string_view expected;
-        std::string actual;
+        std::size_t expected;
 
-        Misstep(const std::string & query_, const std::string_view expected_, const std::string & actual_)
+        Misstep(const std::string & query_, const std::size_t expected_)
             : query(query_)
             , expected(expected_)
-            , actual(actual_)
         { }
     };
     std::list<std::vector<Misstep>> missteps;
@@ -932,16 +905,15 @@ TEST_F(InvertedIndexLoadTest, many)
                 missteps.reserve(to - from);
                 while (from != to) {
                     const auto & [query, expected] = queries[from];
-                    auto [begin, end] = searcher.search(query);
-                    advance_with_limit(ControlN, begin, end);
+                    const auto [begin, end] = searcher.search(query);
                     if (begin != end) {
-                        if (*begin != expected) {
-                            missteps.emplace_back(query, expected, *begin);
+                        if (expected == 0) {
+                            missteps.emplace_back(query, expected);
                         }
                     }
                     else {
-                        if (!expected.empty()) {
-                            missteps.emplace_back(query, expected, std::string{});
+                        if (expected != 0) {
+                            missteps.emplace_back(query, expected);
                         }
                     }
                     ++from;
@@ -957,19 +929,23 @@ TEST_F(InvertedIndexLoadTest, many)
     }
     for (const auto & ms : missteps) {
         for (const auto & m : ms) {
-            EXPECT_EQ(m.expected, m.actual) << m.query;
+            if (m.expected != 0) {
+                EXPECT_EQ(m.expected, 0) << m.query;
+            }
+            else {
+                ADD_FAILURE() << "Expected empty results for /" << m.query << "/";
+            }
         }
     }
 }
 
 TEST_F(InvertedIndexLoadTest, timing)
 {
-    const std::size_t N = 4;
+    const std::size_t N = 4, K = 4;
     std::vector<std::vector<std::size_t>> tasks;
     tasks.reserve(N);
     std::mt19937_64 rnd(0); // always the same sequence
     for (std::size_t i = 0; i < N; ++i) {
-        const std::size_t K = 600;
         auto & indices = tasks.emplace_back(K * queries.size());
         for (std::size_t j = 0, start = 0; j < K; ++j, start += queries.size()) {
             std::iota(indices.begin() + start, indices.begin() + start + queries.size(), 0);
@@ -985,7 +961,7 @@ TEST_F(InvertedIndexLoadTest, timing)
                 for (const auto i : task) {
                     auto [begin, end] = searcher.search(queries[i].first);
                     advance_with_limit(ControlN, begin, end);
-                    if (begin != end && begin->size() > 0) {
+                    if (begin != end) {
                         ++acc;
                     }
                 }
@@ -997,5 +973,5 @@ TEST_F(InvertedIndexLoadTest, timing)
     const auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = t2 - t1;
     EXPECT_LT(0, acc);
-    EXPECT_GT(1, diff.count()) << "Search took too long";
+    EXPECT_GT(40, diff.count()) << "Search took too long";
 }
