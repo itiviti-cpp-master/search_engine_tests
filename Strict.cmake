@@ -40,7 +40,6 @@ function(setup_warnings TARGET)
         set_target_properties(${TARGET} PROPERTIES CXX_CLANG_TIDY clang-tidy)
     endif()
     # Warnings
-    target_compile_options(${TARGET} PRIVATE -Wno-error-unknown-warning-option) # just in case if some warnings are unavialable
     target_compile_options(${TARGET} PRIVATE -Wold-style-cast)
     target_compile_options(${TARGET} PRIVATE -Wnull-dereference)
 
